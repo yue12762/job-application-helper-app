@@ -14,6 +14,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const MAX_BODY_SIZE = 8 * 1024 * 1024;
 const MAX_FIELD_LENGTH = 20_000;
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_PROFILE_SIZE_BYTES = 256 * 1024;
 const MAX_PROFILE_ITEMS_PER_CATEGORY = 100;
 const MAX_PROFILE_NAME_LENGTH = 200;
 const MAX_PROFILE_DESCRIPTION_LENGTH = 5000;
@@ -31,6 +32,8 @@ const SUPPORTED_IMAGE_MEDIA_TYPES = new Set([
   "image/jpeg",
   "image/webp",
 ]);
+const INPUT_TOO_LARGE_MESSAGE =
+  "輸入內容過大，請縮短文字或使用較小的圖片後再試。";
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
@@ -201,11 +204,7 @@ function readJsonBody(request) {
       if (Buffer.byteLength(body, "utf8") > MAX_BODY_SIZE) {
         bodyTooLarge = true;
         body = "";
-        reject(
-          Object.assign(new Error("請求資料過大，職缺圖片大小不可超過 5 MB"), {
-            statusCode: 413,
-          }),
-        );
+        reject(createPayloadTooLargeError());
       }
     });
 
@@ -227,6 +226,10 @@ function readJsonBody(request) {
 
 function createHttpError(message, statusCode = 400) {
   return Object.assign(new Error(message), { statusCode });
+}
+
+function createPayloadTooLargeError() {
+  return createHttpError(INPUT_TOO_LARGE_MESSAGE, 413);
 }
 
 function hasExpectedImageSignature(buffer, mediaType) {
@@ -288,14 +291,17 @@ function validateJdImageDataUrl(value) {
   const estimatedSize = (encodedImage.length * 3) / 4 - paddingLength;
 
   if (estimatedSize > MAX_IMAGE_SIZE_BYTES) {
-    throw createHttpError("圖片大小不可超過 5 MB");
+    throw createPayloadTooLargeError();
   }
 
   const imageBuffer = Buffer.from(encodedImage, "base64");
 
+  if (imageBuffer.length > MAX_IMAGE_SIZE_BYTES) {
+    throw createPayloadTooLargeError();
+  }
+
   if (
     imageBuffer.length === 0 ||
-    imageBuffer.length > MAX_IMAGE_SIZE_BYTES ||
     !hasExpectedImageSignature(imageBuffer, mediaType)
   ) {
     throw createHttpError("職缺圖片內容與檔案格式不符");
@@ -334,7 +340,7 @@ function validateProfileText(value, label, maxLength, required = true) {
   }
 
   if (normalizedValue.length > maxLength) {
-    throw createHttpError(`${label}內容過長`);
+    throw createPayloadTooLargeError();
   }
 
   return normalizedValue;
@@ -376,6 +382,12 @@ function validateStructuredProfile(value) {
     throw createHttpError("求職 Profile 格式不正確");
   }
 
+  if (
+    Buffer.byteLength(JSON.stringify(value), "utf8") > MAX_PROFILE_SIZE_BYTES
+  ) {
+    throw createPayloadTooLargeError();
+  }
+
   let totalLength = 0;
 
   PROFILE_CATEGORIES.forEach((category) => {
@@ -386,7 +398,7 @@ function validateStructuredProfile(value) {
     }
 
     if (items.length > MAX_PROFILE_ITEMS_PER_CATEGORY) {
-      throw createHttpError(`Profile 的 ${category} 最多只能有 100 筆資料`);
+      throw createPayloadTooLargeError();
     }
 
     normalizedProfile[category] = items.map((item, index) => {
@@ -426,7 +438,7 @@ function validateStructuredProfile(value) {
   });
 
   if (totalLength > MAX_PROFILE_TOTAL_LENGTH) {
-    throw createHttpError("求職 Profile 總內容請控制在 50,000 字以內");
+    throw createPayloadTooLargeError();
   }
 
   return normalizedProfile;
@@ -441,6 +453,14 @@ function validateAnalyzePayload(payload) {
   const jd = typeof source.jd === "string" ? source.jd.trim() : "";
   const legacyBackground =
     typeof source.background === "string" ? source.background.trim() : "";
+
+  if (
+    jd.length > MAX_FIELD_LENGTH ||
+    legacyBackground.length > MAX_FIELD_LENGTH
+  ) {
+    throw createPayloadTooLargeError();
+  }
+
   const profile = validateStructuredProfile(source.profile);
   const hasStructuredProfile = hasStructuredProfileData(profile);
   const jdImage = validateJdImageDataUrl(source.jdImage);
@@ -451,10 +471,6 @@ function validateAnalyzePayload(payload) {
 
   if (!hasStructuredProfile && !legacyBackground) {
     throw createHttpError("請提供求職 Profile 或舊版 background");
-  }
-
-  if (jd.length > MAX_FIELD_LENGTH || legacyBackground.length > MAX_FIELD_LENGTH) {
-    throw createHttpError("職缺內容與背景資料請各自控制在 20,000 字以內");
   }
 
   return {
@@ -588,6 +604,13 @@ async function handleAnalyze(request, response) {
     });
   } catch (error) {
     if (!response.headersSent) {
+      if (error.statusCode === 413) {
+        sendJson(response, 413, {
+          error: INPUT_TOO_LARGE_MESSAGE,
+        });
+        return;
+      }
+
       let statusCode = error.statusCode || 500;
       let message = error.publicMessage || "目前無法完成 AI 分析，請稍後再試";
 
@@ -708,7 +731,10 @@ if (require.main === module) {
 
 module.exports = {
   MAX_BODY_SIZE,
+  MAX_FIELD_LENGTH,
   MAX_IMAGE_SIZE_BYTES,
+  MAX_PROFILE_SIZE_BYTES,
+  MAX_PROFILE_TOTAL_LENGTH,
   analyzeRateLimiter,
   analysisSchema,
   buildOpenAIContent,
