@@ -2,12 +2,13 @@ require("dotenv").config({ quiet: true });
 
 const http = require("node:http");
 const fs = require("node:fs/promises");
+const net = require("node:net");
 const path = require("node:path");
 const OpenAI = require("openai");
 const { ipKeyGenerator, rateLimit } = require("express-rate-limit");
 
-const HOST = "127.0.0.1";
-const PORT = Number(process.env.PORT) || 3000;
+const HOST = "0.0.0.0";
+const PORT = Number(process.env.PORT || 3000);
 // A 5 MiB image becomes about 6.67 MiB after Base64 encoding. The 8 MiB
 // request limit leaves additional room for the Data URL prefix, text fields,
 // and JSON syntax while the decoded image limit below remains 5 MiB.
@@ -53,13 +54,33 @@ function createOpenAIClient(apiKey) {
 
 const openai = createOpenAIClient(process.env.OPENAI_API_KEY);
 
+function getRateLimitClientIp(request, env = process.env) {
+  const socketIp = request.socket.remoteAddress || "unknown";
+  const isRenderWebService =
+    env.RENDER === "true" && env.RENDER_SERVICE_TYPE === "web";
+
+  if (!isRenderWebService) {
+    return socketIp;
+  }
+
+  const connectingIpHeader = request.headers["cf-connecting-ip"];
+
+  if (typeof connectingIpHeader !== "string") {
+    return socketIp;
+  }
+
+  const connectingIp = connectingIpHeader.trim();
+
+  return net.isIP(connectingIp) ? connectingIp : socketIp;
+}
+
 const analyzeRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
   standardHeaders: "draft-7",
   legacyHeaders: false,
   keyGenerator: (request) =>
-    ipKeyGenerator(request.socket.remoteAddress || "unknown", 56),
+    ipKeyGenerator(getRateLimitClientIp(request), 56),
   handler: (_request, response) => {
     sendJson(response, 429, {
       error: "分析次數過於頻繁，請稍後再試。",
@@ -780,6 +801,20 @@ function createAppServer({
   return http.createServer(async (request, response) => {
     const pathname = new URL(request.url, `http://${HOST}:${PORT}`).pathname;
 
+    if (pathname === "/health") {
+      if (request.method !== "GET") {
+        response.setHeader("Allow", "GET");
+        sendJson(response, 405, {
+          success: false,
+          message: "健康檢查僅接受 GET 請求",
+        });
+        return;
+      }
+
+      sendJson(response, 200, { status: "ok" });
+      return;
+    }
+
     if (pathname === "/api/analyze") {
       if (request.method !== "POST") {
         response.setHeader("Allow", "POST");
@@ -829,7 +864,9 @@ const server = createAppServer();
 
 if (require.main === module) {
   server.listen(PORT, HOST, () => {
-    console.log(`Job Application Helper 已啟動：http://${HOST}:${PORT}`);
+    console.log(
+      `Job Application Helper 已啟動：http://localhost:${PORT}（綁定 ${HOST}）`,
+    );
   });
 }
 
@@ -846,6 +883,7 @@ module.exports = {
   buildOpenAIContent,
   createAppServer,
   createOpenAIClient,
+  getRateLimitClientIp,
   getSafeOpenAIErrorResponse,
   hasStructuredProfileData,
   server,
