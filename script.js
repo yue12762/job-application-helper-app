@@ -727,6 +727,12 @@ function createRequirementMatches(requirementMatches) {
 
   requirementMatches.forEach((match) => {
     const display = MATCH_STATUS_DISPLAY[match.status] || MATCH_STATUS_DISPLAY.unknown;
+    const matchedParts = Array.isArray(match.matchedParts)
+      ? match.matchedParts.filter((part) => typeof part === "string" && part.trim())
+      : [];
+    const unknownParts = Array.isArray(match.unknownParts)
+      ? match.unknownParts.filter((part) => typeof part === "string" && part.trim())
+      : [];
     const card = document.createElement("article");
     const header = document.createElement("div");
     const requirement = document.createElement("h4");
@@ -743,11 +749,47 @@ function createRequirementMatches(requirementMatches) {
     evidence.append(evidenceLabel, document.createTextNode(match.evidence));
     header.append(requirement, badge);
     card.append(header, evidence);
+
+    if (matchedParts.length || unknownParts.length) {
+      const parts = document.createElement("div");
+      parts.className = "requirement-parts";
+
+      if (matchedParts.length) {
+        parts.append(createRequirementParts("已有證據", matchedParts, "is-matched"));
+      }
+
+      if (unknownParts.length) {
+        parts.append(createRequirementParts("尚待確認", unknownParts, "is-unknown"));
+      }
+
+      card.append(parts);
+    }
+
     matchList.append(card);
   });
 
   section.append(heading, matchList);
   return section;
+}
+
+function createRequirementParts(labelText, items, className) {
+  const group = document.createElement("div");
+  const label = document.createElement("span");
+  const list = document.createElement("ul");
+
+  group.className = `requirement-parts-group ${className}`;
+  label.className = "requirement-parts-label";
+  label.textContent = labelText;
+  list.className = "requirement-parts-list";
+
+  items.forEach((item) => {
+    const listItem = document.createElement("li");
+    listItem.textContent = item;
+    list.append(listItem);
+  });
+
+  group.append(label, list);
+  return group;
 }
 
 function createFocusCard(title, items, className) {

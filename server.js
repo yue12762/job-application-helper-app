@@ -54,8 +54,22 @@ const analysisSchema = {
             enum: ["confirmed", "inferred", "unknown"],
           },
           evidence: { type: "string" },
+          matchedParts: {
+            type: "array",
+            items: { type: "string" },
+          },
+          unknownParts: {
+            type: "array",
+            items: { type: "string" },
+          },
         },
-        required: ["requirement", "status", "evidence"],
+        required: [
+          "requirement",
+          "status",
+          "evidence",
+          "matchedParts",
+          "unknownParts",
+        ],
       },
     },
     applicationFocus: {
@@ -102,12 +116,15 @@ const analysisInstructions = `
 8. 自我推薦信要簡短、自然，只能把 Confirmed 資訊寫成事實；不得把 Inferred 或 Unknown 寫成求職者的事實，也不得自行加入姓名、公司、職稱、工作經歷、年資、技能、證照、作品、商業合作、數據或成就。
 9. 若某分類沒有可靠內容，回傳空陣列，不要硬湊答案。
 10. 若有職缺截圖，直接理解圖片中的職缺內容；看不清楚、遭裁切或無法可靠辨識的資訊一律視為 Unknown，不得猜測或自行補完。
-11. requirementMatches 應涵蓋職缺中具有實際求職判斷價值的主要要求，每項要求只出現一次。status 只能是 confirmed、inferred 或 unknown。
-12. confirmed 的 evidence 必須指出 Profile 中可追溯的明確證據；inferred 的 evidence 必須使用保守措辭；unknown 的 evidence 必須表示「目前 Profile 尚未提供足夠資訊確認」，不得使用不會、缺乏、不符合或弱項等否定判斷。
-13. strengthsToHighlight 只列 2～4 項最值得主打、且有 Confirmed 證據的能力；若不足 2 項，不得以 Inferred 或 Unknown 補足。
-14. gapsToClarify 只列真正影響職缺的 1～3 項重要 Unknown；若沒有可靠項目則回傳空陣列。
-15. presentationTips 提供 2～3 項具體的履歷、作品集或面試呈現方式，不要展開成大量學習建議。
-16. 不得輸出配對百分比、分數、錄取率、適合或不適合、推薦或不推薦等結論。
+11. requirementMatches 應涵蓋職缺中具有實際求職判斷價值的主要要求，每項要求只出現一次。遇到同時包含多個技能、平台、工具或工作內容的複合要求，必須先辨識其中具判斷價值的子要求，再判定整體 status。
+12. matchedParts 只列出有 Profile 明確證據支持的子要求；unknownParts 只列出目前 Profile 尚未提供足夠資訊確認的子要求。不得因使用者熟悉某一平台或工具，就推定也熟悉同列的其他平台或工具。例如 YouTube 經驗不能直接證明 Instagram、Threads 或 LINE 經驗。
+13. status 只能是 confirmed、inferred 或 unknown：confirmed 僅限 Profile 的明確證據足以支持 requirement 的主要內容，且沒有影響整體判斷的重要 unknownParts；inferred 用於已有部分相關證據，但仍有一個以上重要子要求尚待確認，或現有證據只能合理延伸而無法完整確認；unknown 用於沒有足夠證據判斷，matchedParts 通常應為空。
+14. 部分符合不得判為 confirmed，也不代表使用者不具備未確認項目。unknownParts 與 evidence 必須使用「尚待確認」、「目前 Profile 尚未提供足夠資訊確認」等中性措辭，不得使用不會、缺乏、沒有、不符合或弱項等否定判斷。
+15. confirmed 的 evidence 必須指出 Profile 中可追溯的明確證據；inferred 的 evidence 必須同時說明已有的相關證據與仍待確認的範圍，並使用保守措辭；unknown 的 evidence 必須表示「目前 Profile 尚未提供足夠資訊確認」。
+16. strengthsToHighlight 只列 2～4 項最值得主打、且有 Confirmed 證據的能力；若不足 2 項，不得以 Inferred 或 Unknown 補足。
+17. gapsToClarify 只列真正影響職缺的 1～3 項重要 Unknown；若沒有可靠項目則回傳空陣列。
+18. presentationTips 提供 2～3 項具體的履歷、作品集或面試呈現方式，不要展開成大量學習建議。
+19. 不得輸出配對百分比、分數、錄取率、適合或不適合、推薦或不推薦等結論。
 `;
 const publicFiles = new Map([
   ["/", { file: "index.html", contentType: "text/html; charset=utf-8" }],
