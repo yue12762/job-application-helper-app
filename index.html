@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Job Application Helper：協助整理職缺需求與求職者背景的分析工具。"
+    />
+    <title>Job Application Helper</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <span class="eyebrow">CAREER TOOLKIT</span>
+        <h1>Job Application Helper</h1>
+        <p>AI 求職分析與自我推薦信助手</p>
+      </header>
+
+      <form class="application-form" id="application-form" novalidate>
+        <div class="field-group">
+          <div class="field-heading">
+            <label for="job-description">職缺 JD</label>
+            <span>職缺需求與工作內容</span>
+          </div>
+          <textarea
+            id="job-description"
+            name="jobDescription"
+            placeholder="請貼上職缺內容……"
+            rows="8"
+          ></textarea>
+        </div>
+
+        <div class="field-group">
+          <div class="field-heading">
+            <label for="candidate-background">我的背景</label>
+            <span>讓分析更貼近你的優勢</span>
+          </div>
+          <textarea
+            id="candidate-background"
+            name="candidateBackground"
+            placeholder="請輸入你的技能、經歷、作品或證照……"
+            rows="8"
+          ></textarea>
+        </div>
+
+        <button class="primary-button" type="submit">開始分析</button>
+      </form>
+
+      <section class="result-panel" aria-labelledby="result-title">
+        <div class="result-heading">
+          <span class="result-icon" aria-hidden="true">✦</span>
+          <h2 id="result-title">分析結果</h2>
+        </div>
+        <div id="result-message" role="status" aria-live="polite">
+          分析結果會顯示在這裡
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
