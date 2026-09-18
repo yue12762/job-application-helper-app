@@ -55,27 +55,154 @@
           </div>
         </div>
 
-        <div class="field-group">
-          <div class="field-heading">
-            <label for="candidate-background">我的背景</label>
-            <span>讓分析更貼近你的優勢</span>
+        <section class="profile-panel" aria-labelledby="profile-title">
+          <div class="profile-intro">
+            <div>
+              <span class="section-kicker">REUSABLE PROFILE</span>
+              <h2 id="profile-title">我的求職 Profile</h2>
+              <p>
+                建立你的求職能力資料，之後分析不同職缺時可以重複使用。<br />
+                不需要提供姓名或其他基本個人資料。
+              </p>
+            </div>
+            <span class="privacy-badge">僅儲存在此瀏覽器</span>
           </div>
-          <textarea
-            id="candidate-background"
-            name="candidateBackground"
-            placeholder="請輸入你的技能、經歷、作品或證照……"
-            rows="8"
-          ></textarea>
-          <div class="profile-actions">
-            <button class="secondary-button" id="save-profile" type="button">
-              儲存個人資料
+
+          <div class="profile-categories">
+            <article class="profile-category" data-profile-category="skills">
+              <div class="profile-category-heading">
+                <div>
+                  <h3>技能</h3>
+                  <p>工具、軟體、技術或工作技能</p>
+                </div>
+                <button class="add-profile-item" type="button" data-category="skills">
+                  ＋ 新增技能
+                </button>
+              </div>
+              <div class="profile-item-list tag-list" id="profile-skills"></div>
+            </article>
+
+            <article class="profile-category" data-profile-category="certifications">
+              <div class="profile-category-heading">
+                <div>
+                  <h3>證照 / 專業證明</h3>
+                  <p>能支持專業能力的證照或證明</p>
+                </div>
+                <button
+                  class="add-profile-item"
+                  type="button"
+                  data-category="certifications"
+                >
+                  ＋ 新增證照
+                </button>
+              </div>
+              <div class="profile-item-list" id="profile-certifications"></div>
+            </article>
+
+            <article class="profile-category" data-profile-category="experiences">
+              <div class="profile-category-heading">
+                <div>
+                  <h3>經驗</h3>
+                  <p>做過的工作內容，不需要填寫公司或職稱</p>
+                </div>
+                <button
+                  class="add-profile-item"
+                  type="button"
+                  data-category="experiences"
+                >
+                  ＋ 新增經驗
+                </button>
+              </div>
+              <div class="profile-item-list" id="profile-experiences"></div>
+            </article>
+
+            <article class="profile-category" data-profile-category="projects">
+              <div class="profile-category-heading">
+                <div>
+                  <h3>作品 / 專案</h3>
+                  <p>作品名稱、參與內容與選填連結</p>
+                </div>
+                <button class="add-profile-item" type="button" data-category="projects">
+                  ＋ 新增作品
+                </button>
+              </div>
+              <div class="profile-item-list" id="profile-projects"></div>
+            </article>
+
+            <article class="profile-category" data-profile-category="strengths">
+              <div class="profile-category-heading">
+                <div>
+                  <h3>其他求職能力 / 優勢</h3>
+                  <p>工作特質、協作能力或其他優勢</p>
+                </div>
+                <button class="add-profile-item" type="button" data-category="strengths">
+                  ＋ 新增其他能力
+                </button>
+              </div>
+              <div class="profile-item-list tag-list" id="profile-strengths"></div>
+            </article>
+          </div>
+
+          <div class="structured-profile-actions">
+            <button class="secondary-button" id="save-structured-profile" type="button">
+              儲存求職 Profile
             </button>
-            <span id="profile-status" role="status" aria-live="polite"></span>
+            <span id="structured-profile-status" role="status" aria-live="polite"></span>
           </div>
-        </div>
+
+          <details class="legacy-profile" id="legacy-profile-section">
+            <summary>舊版背景資料（相容保留）</summary>
+            <div class="legacy-profile-content">
+              <p>
+                這裡保留原本的背景文字，不會自動拆分或改寫。只有新版 Profile
+                沒有任何內容時，分析才會使用此欄位作為相容資料。
+              </p>
+              <label for="candidate-background">背景文字</label>
+              <textarea
+                id="candidate-background"
+                name="candidateBackground"
+                placeholder="請輸入你的技能、經歷、作品或證照……"
+                rows="6"
+              ></textarea>
+              <div class="profile-actions">
+                <button class="secondary-button" id="save-profile" type="button">
+                  儲存舊版背景資料
+                </button>
+                <span id="profile-status" role="status" aria-live="polite"></span>
+              </div>
+            </div>
+          </details>
+        </section>
 
         <button class="primary-button" type="submit">開始分析</button>
       </form>
+
+      <dialog class="profile-editor-dialog" id="profile-editor-dialog">
+        <form class="profile-editor-form" id="profile-editor-form">
+          <div class="profile-editor-heading">
+            <div>
+              <span class="section-kicker">PROFILE ITEM</span>
+              <h2 id="profile-editor-title">新增資料</h2>
+            </div>
+            <button
+              class="dialog-close-button"
+              id="close-profile-editor"
+              type="button"
+              aria-label="關閉編輯視窗"
+            >
+              ×
+            </button>
+          </div>
+          <div class="profile-editor-fields" id="profile-editor-fields"></div>
+          <p class="profile-editor-error" id="profile-editor-error" role="alert" hidden></p>
+          <div class="profile-editor-actions">
+            <button class="secondary-button" id="cancel-profile-editor" type="button">
+              取消
+            </button>
+            <button class="primary-button compact-button" type="submit">儲存項目</button>
+          </div>
+        </form>
+      </dialog>
 
       <section class="result-panel" aria-labelledby="result-title">
         <div class="result-heading">
