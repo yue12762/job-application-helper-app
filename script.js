@@ -3,6 +3,32 @@ const jobDescription = document.querySelector("#job-description");
 const candidateBackground = document.querySelector("#candidate-background");
 const resultMessage = document.querySelector("#result-message");
 const submitButton = applicationForm.querySelector('button[type="submit"]');
+const saveProfileButton = document.querySelector("#save-profile");
+const profileStatus = document.querySelector("#profile-status");
+const PROFILE_STORAGE_KEY = "jobApplicationHelper.profile.background";
+
+function loadSavedProfile() {
+  try {
+    const savedProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
+
+    if (savedProfile !== null) {
+      candidateBackground.value = savedProfile;
+    }
+  } catch {
+    // localStorage unavailable: keep the background field in its current state.
+  }
+}
+
+saveProfileButton.addEventListener("click", () => {
+  try {
+    localStorage.setItem(PROFILE_STORAGE_KEY, candidateBackground.value);
+    profileStatus.textContent = "個人資料已儲存";
+  } catch {
+    profileStatus.textContent = "無法儲存個人資料，請確認瀏覽器設定";
+  }
+});
+
+loadSavedProfile();
 
 function createList(items) {
   if (!items.length) {

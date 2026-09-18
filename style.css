@@ -132,6 +132,46 @@ textarea:focus {
   box-shadow: 0 0 0 4px rgba(54, 89, 217, 0.12);
 }
 
+.profile-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.secondary-button {
+  padding: 9px 15px;
+  cursor: pointer;
+  color: var(--primary);
+  border: 1px solid rgba(54, 89, 217, 0.24);
+  border-radius: 10px;
+  background: var(--primary-soft);
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.secondary-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(54, 89, 217, 0.42);
+  background: #e3e9ff;
+}
+
+.secondary-button:active {
+  transform: translateY(0);
+}
+
+.secondary-button:focus-visible {
+  outline: 3px solid rgba(54, 89, 217, 0.2);
+  outline-offset: 2px;
+}
+
+#profile-status {
+  min-height: 1.5em;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .primary-button {
   min-height: 52px;
   padding: 13px 24px;
@@ -275,5 +315,10 @@ textarea:focus {
     align-items: flex-start;
     flex-direction: column;
     gap: 2px;
+  }
+
+  .profile-actions {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
