@@ -1010,7 +1010,7 @@ async function runAnalysis() {
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
-      throw new Error(data?.message || "伺服器暫時無法完成分析");
+      throw new Error(data?.error || data?.message || "伺服器暫時無法完成分析");
     }
 
     if (!data?.analysis) {

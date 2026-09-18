@@ -4,6 +4,7 @@ const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const OpenAI = require("openai");
+const { ipKeyGenerator, rateLimit } = require("express-rate-limit");
 
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.PORT) || 3000;
@@ -33,6 +34,20 @@ const SUPPORTED_IMAGE_MEDIA_TYPES = new Set([
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
+
+const analyzeRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  keyGenerator: (request) =>
+    ipKeyGenerator(request.socket.remoteAddress || "unknown", 56),
+  handler: (_request, response) => {
+    sendJson(response, 429, {
+      error: "分析次數過於頻繁，請稍後再試。",
+    });
+  },
+});
 
 const analysisSchema = {
   type: "object",
@@ -139,6 +154,34 @@ function sendJson(response, statusCode, payload) {
     "Cache-Control": "no-store",
   });
   response.end(JSON.stringify(payload));
+}
+
+function enforceAnalyzeRateLimit(request, response) {
+  request.originalUrl = request.url;
+
+  return new Promise((resolve, reject) => {
+    let continued = false;
+
+    const handleLimitedResponse = () => {
+      if (!continued) {
+        resolve(false);
+      }
+    };
+
+    response.once("finish", handleLimitedResponse);
+
+    analyzeRateLimiter(request, response, (error) => {
+      continued = true;
+      response.off("finish", handleLimitedResponse);
+
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(true);
+    });
+  });
 }
 
 function readJsonBody(request) {
@@ -627,6 +670,21 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    try {
+      const allowed = await enforceAnalyzeRateLimit(request, response);
+
+      if (!allowed) {
+        return;
+      }
+    } catch (error) {
+      console.error("Rate limiter failed", { name: error.name });
+      sendJson(response, 500, {
+        success: false,
+        message: "目前無法處理分析請求，請稍後再試",
+      });
+      return;
+    }
+
     await handleAnalyze(request, response);
     return;
   }
@@ -651,6 +709,7 @@ if (require.main === module) {
 module.exports = {
   MAX_BODY_SIZE,
   MAX_IMAGE_SIZE_BYTES,
+  analyzeRateLimiter,
   analysisSchema,
   buildOpenAIContent,
   hasStructuredProfileData,
