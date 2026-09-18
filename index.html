@@ -204,6 +204,61 @@
         </form>
       </dialog>
 
+      <dialog
+        class="profile-editor-dialog profile-supplement-dialog"
+        id="profile-supplement-dialog"
+        aria-labelledby="profile-supplement-title"
+      >
+        <form class="profile-editor-form" id="profile-supplement-form">
+          <div class="profile-editor-heading">
+            <div>
+              <span class="section-kicker">UPDATE PROFILE</span>
+              <h2 id="profile-supplement-title">補充求職 Profile</h2>
+            </div>
+            <button
+              class="dialog-close-button"
+              id="close-profile-supplement"
+              type="button"
+              aria-label="關閉補充視窗"
+            >
+              ×
+            </button>
+          </div>
+          <div class="supplement-requirement" aria-live="polite">
+            <span>目前補充的職缺要求</span>
+            <strong id="profile-supplement-requirement"></strong>
+          </div>
+          <p class="supplement-guidance">
+            如果你有與這項要求相關的能力、經驗、作品或證照，可以補充到求職 Profile。
+          </p>
+          <div class="profile-editor-field">
+            <label for="profile-supplement-category">資料類型</label>
+            <select id="profile-supplement-category" name="category">
+              <option value="skills">技能</option>
+              <option value="certifications">證照 / 專業證明</option>
+              <option value="experiences">經驗</option>
+              <option value="projects">作品 / 專案</option>
+              <option value="strengths">其他求職能力 / 優勢</option>
+            </select>
+          </div>
+          <div class="profile-editor-fields" id="profile-supplement-fields"></div>
+          <p
+            class="profile-editor-error"
+            id="profile-supplement-error"
+            role="alert"
+            hidden
+          ></p>
+          <div class="profile-editor-actions">
+            <button class="secondary-button" id="cancel-profile-supplement" type="button">
+              取消
+            </button>
+            <button class="primary-button compact-button" type="submit">
+              加入 Profile 並重新分析
+            </button>
+          </div>
+        </form>
+      </dialog>
+
       <section class="result-panel" aria-labelledby="result-title">
         <div class="result-heading">
           <span class="result-icon" aria-hidden="true">✦</span>

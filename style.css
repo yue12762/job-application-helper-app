@@ -536,7 +536,8 @@ textarea:focus {
 }
 
 .profile-editor-field input,
-.profile-editor-field textarea {
+.profile-editor-field textarea,
+.profile-editor-field select {
   width: 100%;
   padding: 11px 13px;
   color: var(--text);
@@ -551,7 +552,8 @@ textarea:focus {
 }
 
 .profile-editor-field input:focus,
-.profile-editor-field textarea:focus {
+.profile-editor-field textarea:focus,
+.profile-editor-field select:focus {
   border-color: var(--primary);
   background: var(--surface);
   box-shadow: 0 0 0 4px rgba(54, 89, 217, 0.12);
@@ -573,6 +575,33 @@ textarea:focus {
   min-height: auto;
   padding: 9px 16px;
   box-shadow: none;
+}
+
+.supplement-requirement {
+  display: grid;
+  gap: 5px;
+  padding: 13px 14px;
+  border: 1px solid #fedf89;
+  border-radius: 11px;
+  background: var(--unknown-background);
+}
+
+.supplement-requirement span {
+  color: var(--unknown);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.supplement-requirement strong {
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.supplement-guidance {
+  margin: -8px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
 }
 
 .secondary-button {
@@ -871,6 +900,28 @@ textarea:focus {
 .requirement-parts-group.is-unknown li {
   border-color: #fedf89;
   background: var(--unknown-background);
+}
+
+.supplement-profile-button {
+  margin-top: 12px;
+  padding: 7px 11px;
+  cursor: pointer;
+  color: var(--unknown);
+  border: 1px solid #fedf89;
+  border-radius: 8px;
+  background: var(--unknown-background);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.supplement-profile-button:hover {
+  border-color: #fdb022;
+  background: #fffaeb;
+}
+
+.supplement-profile-button:focus-visible {
+  outline: 3px solid rgba(247, 144, 9, 0.2);
+  outline-offset: 2px;
 }
 
 .application-focus-grid {

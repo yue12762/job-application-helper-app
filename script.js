@@ -16,6 +16,22 @@ const profileEditorFields = document.querySelector("#profile-editor-fields");
 const profileEditorError = document.querySelector("#profile-editor-error");
 const closeProfileEditorButton = document.querySelector("#close-profile-editor");
 const cancelProfileEditorButton = document.querySelector("#cancel-profile-editor");
+const profileSupplementDialog = document.querySelector("#profile-supplement-dialog");
+const profileSupplementForm = document.querySelector("#profile-supplement-form");
+const profileSupplementRequirement = document.querySelector(
+  "#profile-supplement-requirement",
+);
+const profileSupplementCategory = document.querySelector(
+  "#profile-supplement-category",
+);
+const profileSupplementFields = document.querySelector("#profile-supplement-fields");
+const profileSupplementError = document.querySelector("#profile-supplement-error");
+const closeProfileSupplementButton = document.querySelector(
+  "#close-profile-supplement",
+);
+const cancelProfileSupplementButton = document.querySelector(
+  "#cancel-profile-supplement",
+);
 const jdImageInput = document.querySelector("#jd-image-input");
 const jdImagePreview = document.querySelector("#jd-image-preview");
 const jdPreviewImage = document.querySelector("#jd-preview-image");
@@ -33,6 +49,7 @@ let jdImageReadVersion = 0;
 let isReadingJdImage = false;
 let structuredProfile = createEmptyStructuredProfile();
 let activeProfileEditor = null;
+let activeSupplementRequirement = "";
 
 const PROFILE_CATEGORY_CONFIG = {
   skills: {
@@ -432,7 +449,7 @@ function persistStructuredProfile(successMessage = "求職 Profile 已儲存於�
   }
 }
 
-function createProfileEditorField(field, value) {
+function createProfileEditorField(field, value, idPrefix = "profile-editor") {
   const wrapper = document.createElement("div");
   const label = document.createElement("label");
   const input = field.multiline
@@ -440,9 +457,9 @@ function createProfileEditorField(field, value) {
     : document.createElement("input");
 
   wrapper.className = "profile-editor-field";
-  label.htmlFor = `profile-editor-${field.name}`;
+  label.htmlFor = `${idPrefix}-${field.name}`;
   label.textContent = field.label;
-  input.id = `profile-editor-${field.name}`;
+  input.id = `${idPrefix}-${field.name}`;
   input.name = field.name;
   input.placeholder = field.placeholder;
   input.required = field.required;
@@ -457,6 +474,63 @@ function createProfileEditorField(field, value) {
 
   wrapper.append(label, input);
   return wrapper;
+}
+
+function readProfileItemValues(form, category, errorElement) {
+  const config = PROFILE_CATEGORY_CONFIG[category];
+
+  if (!config) {
+    errorElement.textContent = "請選擇有效的資料類型";
+    errorElement.hidden = false;
+    return null;
+  }
+
+  const formData = new FormData(form);
+  const values = {};
+
+  config.fields.forEach((field) => {
+    values[field.name] = normalizeProfileText(
+      formData.get(field.name),
+      field.name === "description" ? 5000 : field.name === "url" ? 2000 : 200,
+    );
+  });
+
+  const missingRequiredField = config.fields.find(
+    (field) => field.required && !values[field.name],
+  );
+
+  if (missingRequiredField) {
+    errorElement.textContent = `請填寫${missingRequiredField.label}`;
+    errorElement.hidden = false;
+    return null;
+  }
+
+  if (values.url) {
+    const safeUrl = getSafeProjectUrl(values.url);
+
+    if (!safeUrl) {
+      errorElement.textContent = "作品連結請使用有效的 http:// 或 https:// 網址";
+      errorElement.hidden = false;
+      return null;
+    }
+
+    values.url = safeUrl;
+  }
+
+  errorElement.hidden = true;
+  errorElement.textContent = "";
+  return values;
+}
+
+function createStructuredProfileItem(category, values, itemId = null) {
+  return {
+    id: itemId || createProfileItemId(),
+    name: values.name,
+    ...(category === "experiences" || category === "projects"
+      ? { description: values.description }
+      : {}),
+    ...(category === "projects" ? { url: values.url || "" } : {}),
+  };
 }
 
 function openProfileEditor(category, itemId = null) {
@@ -474,7 +548,9 @@ function openProfileEditor(category, itemId = null) {
   profileEditorError.hidden = true;
   profileEditorError.textContent = "";
   profileEditorFields.replaceChildren(
-    ...config.fields.map((field) => createProfileEditorField(field, item?.[field.name])),
+    ...config.fields.map((field) =>
+      createProfileEditorField(field, item?.[field.name]),
+    ),
   );
   profileEditorDialog.showModal();
   profileEditorFields.querySelector("input, textarea")?.focus();
@@ -525,47 +601,17 @@ profileEditorForm.addEventListener("submit", (event) => {
   }
 
   const { category, itemId } = activeProfileEditor;
-  const config = PROFILE_CATEGORY_CONFIG[category];
-  const formData = new FormData(profileEditorForm);
-  const values = {};
-
-  config.fields.forEach((field) => {
-    values[field.name] = normalizeProfileText(
-      formData.get(field.name),
-      field.name === "description" ? 5000 : field.name === "url" ? 2000 : 200,
-    );
-  });
-
-  const missingRequiredField = config.fields.find(
-    (field) => field.required && !values[field.name],
+  const values = readProfileItemValues(
+    profileEditorForm,
+    category,
+    profileEditorError,
   );
 
-  if (missingRequiredField) {
-    profileEditorError.textContent = `請填寫${missingRequiredField.label}`;
-    profileEditorError.hidden = false;
+  if (!values) {
     return;
   }
 
-  if (values.url) {
-    const safeUrl = getSafeProjectUrl(values.url);
-
-    if (!safeUrl) {
-      profileEditorError.textContent = "作品連結請使用有效的 http:// 或 https:// 網址";
-      profileEditorError.hidden = false;
-      return;
-    }
-
-    values.url = safeUrl;
-  }
-
-  const nextItem = {
-    id: itemId || createProfileItemId(),
-    name: values.name,
-    ...(category === "experiences" || category === "projects"
-      ? { description: values.description }
-      : {}),
-    ...(category === "projects" ? { url: values.url || "" } : {}),
-  };
+  const nextItem = createStructuredProfileItem(category, values, itemId);
 
   if (itemId) {
     structuredProfile[category] = structuredProfile[category].map((item) =>
@@ -765,6 +811,17 @@ function createRequirementMatches(requirementMatches) {
       card.append(parts);
     }
 
+    if (match.status === "unknown") {
+      const supplementButton = document.createElement("button");
+      supplementButton.type = "button";
+      supplementButton.className = "supplement-profile-button";
+      supplementButton.textContent = "＋ 補充相關能力";
+      supplementButton.addEventListener("click", () => {
+        openProfileSupplement(match.requirement);
+      });
+      card.append(supplementButton);
+    }
+
     matchList.append(card);
   });
 
@@ -791,6 +848,48 @@ function createRequirementParts(labelText, items, className) {
   group.append(label, list);
   return group;
 }
+
+function renderProfileSupplementFields() {
+  const category = profileSupplementCategory.value;
+  const config = PROFILE_CATEGORY_CONFIG[category];
+
+  profileSupplementError.hidden = true;
+  profileSupplementError.textContent = "";
+  profileSupplementFields.replaceChildren(
+    ...config.fields.map((field) =>
+      createProfileEditorField(field, "", "profile-supplement"),
+    ),
+  );
+}
+
+function openProfileSupplement(requirement) {
+  activeSupplementRequirement = normalizeProfileText(requirement, 1000);
+  profileSupplementRequirement.textContent = activeSupplementRequirement;
+  profileSupplementForm.reset();
+  profileSupplementCategory.value = "skills";
+  renderProfileSupplementFields();
+  profileSupplementDialog.showModal();
+  profileSupplementCategory.focus();
+}
+
+function closeProfileSupplement() {
+  activeSupplementRequirement = "";
+  profileSupplementForm.reset();
+  profileSupplementFields.replaceChildren();
+  profileSupplementError.hidden = true;
+  profileSupplementError.textContent = "";
+  profileSupplementDialog.close();
+}
+
+profileSupplementCategory.addEventListener("change", renderProfileSupplementFields);
+closeProfileSupplementButton.addEventListener("click", closeProfileSupplement);
+cancelProfileSupplementButton.addEventListener("click", closeProfileSupplement);
+
+profileSupplementDialog.addEventListener("click", (event) => {
+  if (event.target === profileSupplementDialog) {
+    closeProfileSupplement();
+  }
+});
 
 function createFocusCard(title, items, className) {
   const card = document.createElement("article");
@@ -858,9 +957,7 @@ function renderAnalysis(analysis) {
   );
 }
 
-applicationForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
+async function runAnalysis() {
   const jd = jobDescription.value.trim();
   const profile = readStructuredProfileForAnalysis();
   const hasStructuredProfile = hasStructuredProfileData(profile);
@@ -872,14 +969,14 @@ applicationForm.addEventListener("submit", async (event) => {
   if (isReadingJdImage) {
     resultMessage.textContent = "圖片仍在讀取中，請稍候再開始分析。";
     resultMessage.classList.add("is-warning");
-    return;
+    return false;
   }
 
   if (!jd && !hasJdImage) {
     resultMessage.textContent = "請貼上職缺 JD 或上傳職缺截圖後再開始分析。";
     resultMessage.classList.add("is-warning");
     jobDescription.focus();
-    return;
+    return false;
   }
 
   if (!hasStructuredProfile && !legacyBackground) {
@@ -887,7 +984,7 @@ applicationForm.addEventListener("submit", async (event) => {
     resultMessage.classList.add("is-warning");
     legacyProfileSection.open = true;
     candidateBackground.focus();
-    return;
+    return false;
   }
 
   resultMessage.textContent = "分析中……";
@@ -922,11 +1019,59 @@ applicationForm.addEventListener("submit", async (event) => {
 
     renderAnalysis(data.analysis);
     resultMessage.classList.remove("is-loading");
+    return true;
   } catch (error) {
     resultMessage.textContent = `無法完成分析：${error.message}`;
     resultMessage.classList.remove("is-loading");
     resultMessage.classList.add("is-warning");
+    return false;
   } finally {
     submitButton.disabled = false;
   }
+}
+
+profileSupplementForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  if (!activeSupplementRequirement) {
+    profileSupplementError.textContent = "找不到要補充的職缺要求，請關閉後重試";
+    profileSupplementError.hidden = false;
+    return;
+  }
+
+  const category = profileSupplementCategory.value;
+  const values = readProfileItemValues(
+    profileSupplementForm,
+    category,
+    profileSupplementError,
+  );
+
+  if (!values) {
+    return;
+  }
+
+  const nextItem = createStructuredProfileItem(category, values);
+  structuredProfile[category].push(nextItem);
+  renderProfileCategory(category);
+
+  if (!persistStructuredProfile("補充資料已加入 Profile，正在重新分析")) {
+    structuredProfile[category] = structuredProfile[category].filter(
+      (item) => item.id !== nextItem.id,
+    );
+    renderProfileCategory(category);
+    profileSupplementError.textContent = "無法儲存 Profile，因此尚未重新分析";
+    profileSupplementError.hidden = false;
+    return;
+  }
+
+  closeProfileSupplement();
+  const analysisSucceeded = await runAnalysis();
+  structuredProfileStatus.textContent = analysisSucceeded
+    ? "補充資料已加入 Profile，重新分析完成"
+    : "補充資料已加入 Profile，但重新分析未完成";
+});
+
+applicationForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await runAnalysis();
 });
