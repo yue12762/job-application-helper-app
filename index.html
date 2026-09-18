@@ -30,6 +30,29 @@
             placeholder="請貼上職缺內容……"
             rows="8"
           ></textarea>
+          <div class="jd-upload-controls">
+            <label class="secondary-button upload-button" for="jd-image-input">
+              上傳職缺截圖
+            </label>
+            <input
+              class="visually-hidden"
+              id="jd-image-input"
+              type="file"
+              accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+            />
+            <span class="upload-help" id="jd-upload-status" role="status" aria-live="polite">
+              支援 PNG、JPG、JPEG、WEBP，檔案上限 5 MB
+            </span>
+          </div>
+          <div class="jd-image-preview" id="jd-image-preview" hidden>
+            <img id="jd-preview-image" alt="所選職缺截圖預覽" />
+            <div class="jd-image-details">
+              <span id="jd-image-name"></span>
+              <button class="remove-image-button" id="remove-jd-image" type="button">
+                移除圖片
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="field-group">

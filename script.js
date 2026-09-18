@@ -5,7 +5,119 @@ const resultMessage = document.querySelector("#result-message");
 const submitButton = applicationForm.querySelector('button[type="submit"]');
 const saveProfileButton = document.querySelector("#save-profile");
 const profileStatus = document.querySelector("#profile-status");
+const jdImageInput = document.querySelector("#jd-image-input");
+const jdImagePreview = document.querySelector("#jd-image-preview");
+const jdPreviewImage = document.querySelector("#jd-preview-image");
+const jdImageName = document.querySelector("#jd-image-name");
+const jdUploadStatus = document.querySelector("#jd-upload-status");
+const removeJdImageButton = document.querySelector("#remove-jd-image");
 const PROFILE_STORAGE_KEY = "jobApplicationHelper.profile.background";
+const SUPPORTED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+const SUPPORTED_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+let jdImageObjectUrl = null;
+let jdImageDataUrl = null;
+let jdImageReadVersion = 0;
+let isReadingJdImage = false;
+
+function isSupportedImage(file) {
+  const lowerCaseName = file.name.toLowerCase();
+  const hasSupportedType = SUPPORTED_IMAGE_TYPES.has(file.type);
+  const hasSupportedExtension = SUPPORTED_IMAGE_EXTENSIONS.some((extension) =>
+    lowerCaseName.endsWith(extension),
+  );
+
+  return hasSupportedType && hasSupportedExtension;
+}
+
+function clearJdImage() {
+  jdImageReadVersion += 1;
+  isReadingJdImage = false;
+  jdImageDataUrl = null;
+
+  if (jdImageObjectUrl) {
+    URL.revokeObjectURL(jdImageObjectUrl);
+    jdImageObjectUrl = null;
+  }
+
+  jdImageInput.value = "";
+  jdPreviewImage.removeAttribute("src");
+  jdImageName.textContent = "";
+  jdImagePreview.hidden = true;
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.addEventListener("load", () => resolve(reader.result));
+    reader.addEventListener("error", () => reject(new Error("無法讀取圖片")));
+    reader.readAsDataURL(file);
+  });
+}
+
+jdImageInput.addEventListener("change", async () => {
+  const [file] = jdImageInput.files;
+
+  if (!file) {
+    return;
+  }
+
+  if (!isSupportedImage(file)) {
+    clearJdImage();
+    jdUploadStatus.textContent = "請選擇 PNG、JPG、JPEG 或 WEBP 圖片";
+    return;
+  }
+
+  if (file.size > MAX_IMAGE_SIZE_BYTES) {
+    clearJdImage();
+    jdUploadStatus.textContent = "圖片大小不可超過 5 MB，請縮小圖片後再試";
+    return;
+  }
+
+  const readVersion = ++jdImageReadVersion;
+  isReadingJdImage = true;
+  jdUploadStatus.textContent = "正在讀取職缺截圖……";
+
+  try {
+    const dataUrl = await readFileAsDataUrl(file);
+
+    if (readVersion !== jdImageReadVersion) {
+      return;
+    }
+
+    if (jdImageObjectUrl) {
+      URL.revokeObjectURL(jdImageObjectUrl);
+    }
+
+    jdImageDataUrl = dataUrl;
+    jdImageObjectUrl = URL.createObjectURL(file);
+    jdPreviewImage.src = jdImageObjectUrl;
+    jdImageName.textContent = file.name;
+    jdImagePreview.hidden = false;
+    jdUploadStatus.textContent = "職缺截圖已準備，可供本次分析使用";
+  } catch {
+    if (readVersion === jdImageReadVersion) {
+      clearJdImage();
+      jdUploadStatus.textContent = "無法讀取圖片，請重新選擇檔案";
+    }
+  } finally {
+    if (readVersion === jdImageReadVersion) {
+      isReadingJdImage = false;
+    }
+  }
+});
+
+removeJdImageButton.addEventListener("click", () => {
+  clearJdImage();
+  jdUploadStatus.textContent = "圖片已移除";
+});
+
+window.addEventListener("beforeunload", () => {
+  if (jdImageObjectUrl) {
+    URL.revokeObjectURL(jdImageObjectUrl);
+  }
+});
 
 function loadSavedProfile() {
   try {
@@ -88,19 +200,27 @@ applicationForm.addEventListener("submit", async (event) => {
 
   const jd = jobDescription.value.trim();
   const background = candidateBackground.value.trim();
+  const hasJdImage = Boolean(jdImageDataUrl);
 
   resultMessage.classList.remove("is-warning", "is-loading");
 
-  if (!jd || !background) {
-    resultMessage.textContent = "請補充職缺 JD 與你的背景資料後再開始分析。";
+  if (isReadingJdImage) {
+    resultMessage.textContent = "圖片仍在讀取中，請稍候再開始分析。";
     resultMessage.classList.add("is-warning");
+    return;
+  }
 
-    if (!jd) {
-      jobDescription.focus();
-    } else {
-      candidateBackground.focus();
-    }
+  if (!jd && !hasJdImage) {
+    resultMessage.textContent = "請貼上職缺 JD 或上傳職缺截圖後再開始分析。";
+    resultMessage.classList.add("is-warning");
+    jobDescription.focus();
+    return;
+  }
 
+  if (!background) {
+    resultMessage.textContent = "請補充你的背景資料後再開始分析。";
+    resultMessage.classList.add("is-warning");
+    candidateBackground.focus();
     return;
   }
 
@@ -114,7 +234,11 @@ applicationForm.addEventListener("submit", async (event) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ jd, background }),
+      body: JSON.stringify({
+        jd,
+        background,
+        ...(hasJdImage ? { jdImage: jdImageDataUrl } : {}),
+      }),
     });
 
     const data = await response.json().catch(() => null);

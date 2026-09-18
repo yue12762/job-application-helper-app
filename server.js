@@ -7,8 +7,17 @@ const OpenAI = require("openai");
 
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.PORT) || 3000;
-const MAX_BODY_SIZE = 1024 * 1024;
+// A 5 MiB image becomes about 6.67 MiB after Base64 encoding. The 8 MiB
+// request limit leaves additional room for the Data URL prefix, text fields,
+// and JSON syntax while the decoded image limit below remains 5 MiB.
+const MAX_BODY_SIZE = 8 * 1024 * 1024;
 const MAX_FIELD_LENGTH = 20_000;
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const SUPPORTED_IMAGE_MEDIA_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+]);
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
@@ -63,6 +72,7 @@ const analysisInstructions = `
 7. 求職建議應具體、可執行，並優先建議補充證據或資訊。
 8. 自我推薦信要簡短、自然，只能把 Confirmed 資訊寫成事實；不得自行加入姓名、公司、職稱、專案、數據或成就。
 9. 若某分類沒有可靠內容，回傳空陣列，不要硬湊答案。
+10. 若有職缺截圖，直接理解圖片中的職缺內容；看不清楚、遭裁切或無法可靠辨識的資訊一律視為 Unknown，不得猜測或自行補完。
 `;
 const publicFiles = new Map([
   ["/", { file: "index.html", contentType: "text/html; charset=utf-8" }],
@@ -96,7 +106,11 @@ function readJsonBody(request) {
       if (Buffer.byteLength(body, "utf8") > MAX_BODY_SIZE) {
         bodyTooLarge = true;
         body = "";
-        reject(Object.assign(new Error("Request body is too large"), { statusCode: 413 }));
+        reject(
+          Object.assign(new Error("請求資料過大，職缺圖片大小不可超過 5 MB"), {
+            statusCode: 413,
+          }),
+        );
       }
     });
 
@@ -108,12 +122,137 @@ function readJsonBody(request) {
       try {
         resolve(JSON.parse(body));
       } catch {
-        reject(Object.assign(new Error("Invalid JSON"), { statusCode: 400 }));
+        reject(Object.assign(new Error("請求資料格式不正確"), { statusCode: 400 }));
       }
     });
 
     request.on("error", reject);
   });
+}
+
+function createHttpError(message, statusCode = 400) {
+  return Object.assign(new Error(message), { statusCode });
+}
+
+function hasExpectedImageSignature(buffer, mediaType) {
+  if (mediaType === "image/png") {
+    return (
+      buffer.length >= 8 &&
+      buffer
+        .subarray(0, 8)
+        .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+    );
+  }
+
+  if (mediaType === "image/jpeg") {
+    return (
+      buffer.length >= 3 &&
+      buffer[0] === 0xff &&
+      buffer[1] === 0xd8 &&
+      buffer[2] === 0xff
+    );
+  }
+
+  if (mediaType === "image/webp") {
+    return (
+      buffer.length >= 12 &&
+      buffer.toString("ascii", 0, 4) === "RIFF" &&
+      buffer.toString("ascii", 8, 12) === "WEBP"
+    );
+  }
+
+  return false;
+}
+
+function validateJdImageDataUrl(value) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    throw createHttpError("職缺圖片格式不正確");
+  }
+
+  const match = /^data:([^;,]+);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
+
+  if (!match || !SUPPORTED_IMAGE_MEDIA_TYPES.has(match[1])) {
+    throw createHttpError("職缺圖片僅支援 PNG、JPG、JPEG 或 WEBP 格式");
+  }
+
+  const [, mediaType, encodedImage] = match;
+
+  if (encodedImage.length % 4 !== 0) {
+    throw createHttpError("職缺圖片資料格式不正確");
+  }
+
+  const paddingLength = encodedImage.endsWith("==")
+    ? 2
+    : encodedImage.endsWith("=")
+      ? 1
+      : 0;
+  const estimatedSize = (encodedImage.length * 3) / 4 - paddingLength;
+
+  if (estimatedSize > MAX_IMAGE_SIZE_BYTES) {
+    throw createHttpError("圖片大小不可超過 5 MB");
+  }
+
+  const imageBuffer = Buffer.from(encodedImage, "base64");
+
+  if (
+    imageBuffer.length === 0 ||
+    imageBuffer.length > MAX_IMAGE_SIZE_BYTES ||
+    !hasExpectedImageSignature(imageBuffer, mediaType)
+  ) {
+    throw createHttpError("職缺圖片內容與檔案格式不符");
+  }
+
+  return {
+    dataUrl: `data:${mediaType};base64,${encodedImage}`,
+    mediaType,
+    size: imageBuffer.length,
+  };
+}
+
+function validateAnalyzePayload(payload) {
+  const source = payload && typeof payload === "object" ? payload : {};
+  const jd = typeof source.jd === "string" ? source.jd.trim() : "";
+  const background =
+    typeof source.background === "string" ? source.background.trim() : "";
+  const jdImage = validateJdImageDataUrl(source.jdImage);
+
+  if (!jd && !jdImage) {
+    throw createHttpError("請提供職缺 JD 或職缺截圖");
+  }
+
+  if (!background) {
+    throw createHttpError("請提供 background");
+  }
+
+  if (jd.length > MAX_FIELD_LENGTH || background.length > MAX_FIELD_LENGTH) {
+    throw createHttpError("職缺內容與背景資料請各自控制在 20,000 字以內");
+  }
+
+  return { jd, background, jdImage };
+}
+
+function buildOpenAIContent({ jd, background, jdImage }) {
+  const jobDescription = jd || "未提供文字 JD；請以附上的職缺截圖為準。";
+  const content = [
+    {
+      type: "input_text",
+      text: `請分析以下資料。若同時提供文字 JD 與截圖，請綜合兩者；若資訊衝突或圖片不清楚，請保守列為 Unknown。\n\n<job_description>\n${jobDescription}\n</job_description>\n\n<candidate_background>\n${background}\n</candidate_background>`,
+    },
+  ];
+
+  if (jdImage) {
+    content.push({
+      type: "input_image",
+      image_url: jdImage.dataUrl,
+      detail: "high",
+    });
+  }
+
+  return content;
 }
 
 async function handleAnalyze(request, response) {
@@ -129,25 +268,7 @@ async function handleAnalyze(request, response) {
 
   try {
     const payload = await readJsonBody(request);
-    const jd = typeof payload.jd === "string" ? payload.jd.trim() : "";
-    const background =
-      typeof payload.background === "string" ? payload.background.trim() : "";
-
-    if (!jd || !background) {
-      sendJson(response, 400, {
-        success: false,
-        message: "請提供完整的 jd 與 background",
-      });
-      return;
-    }
-
-    if (jd.length > MAX_FIELD_LENGTH || background.length > MAX_FIELD_LENGTH) {
-      sendJson(response, 400, {
-        success: false,
-        message: "職缺內容與背景資料請各自控制在 20,000 字以內",
-      });
-      return;
-    }
+    const { jd, background, jdImage } = validateAnalyzePayload(payload);
 
     if (!openai) {
       sendJson(response, 500, {
@@ -163,12 +284,7 @@ async function handleAnalyze(request, response) {
       input: [
         {
           role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: `請分析以下資料。\n\n<job_description>\n${jd}\n</job_description>\n\n<candidate_background>\n${background}\n</candidate_background>`,
-            },
-          ],
+          content: buildOpenAIContent({ jd, background, jdImage }),
         },
       ],
       text: {
@@ -334,6 +450,17 @@ const server = http.createServer(async (request, response) => {
   await serveStaticFile(request.url, response);
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(`Job Application Helper 已啟動：http://${HOST}:${PORT}`);
-});
+if (require.main === module) {
+  server.listen(PORT, HOST, () => {
+    console.log(`Job Application Helper 已啟動：http://${HOST}:${PORT}`);
+  });
+}
+
+module.exports = {
+  MAX_BODY_SIZE,
+  MAX_IMAGE_SIZE_BYTES,
+  buildOpenAIContent,
+  server,
+  validateAnalyzePayload,
+  validateJdImageDataUrl,
+};
