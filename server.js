@@ -20,6 +20,8 @@ const MAX_PROFILE_NAME_LENGTH = 200;
 const MAX_PROFILE_DESCRIPTION_LENGTH = 5000;
 const MAX_PROFILE_URL_LENGTH = 2000;
 const MAX_PROFILE_TOTAL_LENGTH = 50_000;
+const OPENAI_TIMEOUT_MS = 90_000;
+const OPENAI_MAX_RETRIES = 1;
 const PROFILE_CATEGORIES = [
   "skills",
   "certifications",
@@ -34,9 +36,22 @@ const SUPPORTED_IMAGE_MEDIA_TYPES = new Set([
 ]);
 const INPUT_TOO_LARGE_MESSAGE =
   "輸入內容過大，請縮短文字或使用較小的圖片後再試。";
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
+const AI_TIMEOUT_MESSAGE = "AI 分析等待時間過長，請稍後再試。";
+const AI_SERVICE_ERROR_MESSAGE = "AI 服務暫時無法使用，請稍後再試。";
+
+function createOpenAIClient(apiKey) {
+  if (!apiKey) {
+    return null;
+  }
+
+  return new OpenAI({
+    apiKey,
+    timeout: OPENAI_TIMEOUT_MS,
+    maxRetries: OPENAI_MAX_RETRIES,
+  });
+}
+
+const openai = createOpenAIClient(process.env.OPENAI_API_KEY);
 
 const analyzeRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -159,7 +174,11 @@ function sendJson(response, statusCode, payload) {
   response.end(JSON.stringify(payload));
 }
 
-function enforceAnalyzeRateLimit(request, response) {
+function enforceAnalyzeRateLimit(
+  request,
+  response,
+  rateLimiter = analyzeRateLimiter,
+) {
   request.originalUrl = request.url;
 
   return new Promise((resolve, reject) => {
@@ -173,7 +192,7 @@ function enforceAnalyzeRateLimit(request, response) {
 
     response.once("finish", handleLimitedResponse);
 
-    analyzeRateLimiter(request, response, (error) => {
+    rateLimiter(request, response, (error) => {
       continued = true;
       response.off("finish", handleLimitedResponse);
 
@@ -506,7 +525,81 @@ function buildOpenAIContent({ jd, background, jdImage, profile }) {
   return content;
 }
 
-async function handleAnalyze(request, response) {
+function getSafeOpenAIErrorResponse(error) {
+  if (error instanceof OpenAI.APIConnectionTimeoutError) {
+    return {
+      category: "timeout",
+      statusCode: 504,
+      message: AI_TIMEOUT_MESSAGE,
+    };
+  }
+
+  if (
+    error instanceof OpenAI.AuthenticationError ||
+    error instanceof OpenAI.PermissionDeniedError ||
+    error?.status === 401 ||
+    error?.status === 403
+  ) {
+    return {
+      category: "authentication",
+      statusCode: 503,
+      message: AI_SERVICE_ERROR_MESSAGE,
+    };
+  }
+
+  if (error instanceof OpenAI.APIConnectionError) {
+    return {
+      category: "connection",
+      statusCode: 503,
+      message: AI_SERVICE_ERROR_MESSAGE,
+    };
+  }
+
+  if (
+    error?.status === 408 ||
+    error?.status === 409 ||
+    error?.status === 429 ||
+    error?.status >= 500
+  ) {
+    return {
+      category: "service",
+      statusCode: 503,
+      message: AI_SERVICE_ERROR_MESSAGE,
+    };
+  }
+
+  if (error instanceof OpenAI.APIError) {
+    return {
+      category: "upstream",
+      statusCode: 502,
+      message: AI_SERVICE_ERROR_MESSAGE,
+    };
+  }
+
+  return null;
+}
+
+function logSafeOpenAIError(error, category) {
+  const diagnostic = {
+    category,
+    name:
+      typeof error?.constructor?.name === "string"
+        ? error.constructor.name
+        : "Error",
+  };
+
+  if (Number.isInteger(error?.status)) {
+    diagnostic.status = error.status;
+  }
+
+  if (typeof error?.requestID === "string" && error.requestID) {
+    diagnostic.requestId = error.requestID;
+  }
+
+  console.error("OpenAI request failed", diagnostic);
+}
+
+async function handleAnalyze(request, response, openaiClient = openai) {
   const contentType = request.headers["content-type"] || "";
 
   if (!contentType.includes("application/json")) {
@@ -521,15 +614,15 @@ async function handleAnalyze(request, response) {
     const payload = await readJsonBody(request);
     const { jd, background, jdImage, profile } = validateAnalyzePayload(payload);
 
-    if (!openai) {
-      sendJson(response, 500, {
-        success: false,
-        message: "AI 服務尚未完成設定，請確認伺服器環境變數",
+    if (!openaiClient) {
+      console.error("OpenAI client unavailable", { category: "configuration" });
+      sendJson(response, 503, {
+        error: AI_SERVICE_ERROR_MESSAGE,
       });
       return;
     }
 
-    const aiResponse = await openai.responses.parse({
+    const aiResponse = await openaiClient.responses.parse({
       model: "gpt-5-mini",
       instructions: analysisInstructions,
       input: [
@@ -555,6 +648,7 @@ async function handleAnalyze(request, response) {
     });
 
     console.info("OpenAI response metadata", {
+      requestId: aiResponse._request_id || null,
       status: aiResponse.status,
       incompleteReason: aiResponse.incomplete_details?.reason || null,
       outputTextType: typeof aiResponse.output_text,
@@ -611,45 +705,44 @@ async function handleAnalyze(request, response) {
         return;
       }
 
-      let statusCode = error.statusCode || 500;
-      let message = error.publicMessage || "目前無法完成 AI 分析，請稍後再試";
+      if (error.statusCode) {
+        sendJson(response, error.statusCode, {
+          success: false,
+          message: error.message,
+        });
+        return;
+      }
 
-      if (
-        error.code === "credit_balance_exhausted" ||
-        error.code === "insufficient_quota"
-      ) {
-        statusCode = 503;
-        message = "OpenAI API 額度不足，請確認帳戶用量或額度後再試";
-      } else if (error instanceof SyntaxError) {
-        statusCode = 502;
-        message = "AI 回傳格式異常，請稍後再試";
+      if (error.publicMessage) {
+        console.error("OpenAI analysis did not complete", {
+          name: typeof error.name === "string" ? error.name : "Error",
+        });
+        sendJson(response, 502, { error: error.publicMessage });
+        return;
+      }
+
+      if (error instanceof SyntaxError) {
         console.error("OpenAI structured output parse failed", {
           name: error.name,
         });
-      } else if (error.status === 401) {
-        message = "AI 服務設定有誤，請聯絡管理者";
-      } else if (error.status === 429) {
-        statusCode = 503;
-        message = "AI 服務目前忙碌或已達使用上限，請稍後再試";
-      } else if (error.status >= 500) {
-        statusCode = 502;
-        message = "AI 服務暫時無法使用，請稍後再試";
-      } else if (error.statusCode) {
-        message = error.message;
+        sendJson(response, 502, { error: AI_SERVICE_ERROR_MESSAGE });
+        return;
       }
 
-      if (error.status || error.code) {
-        console.error("OpenAI API request failed", {
-          status: error.status,
-          code: error.code,
-          type: error.type,
+      const safeOpenAIError = getSafeOpenAIErrorResponse(error);
+
+      if (safeOpenAIError) {
+        logSafeOpenAIError(error, safeOpenAIError.category);
+        sendJson(response, safeOpenAIError.statusCode, {
+          error: safeOpenAIError.message,
         });
+        return;
       }
 
-      sendJson(response, statusCode, {
-        success: false,
-        message,
+      console.error("Unexpected analysis failure", {
+        name: typeof error?.name === "string" ? error.name : "Error",
       });
+      sendJson(response, 500, { error: AI_SERVICE_ERROR_MESSAGE });
     }
   }
 }
@@ -680,48 +773,59 @@ async function serveStaticFile(requestUrl, response) {
   }
 }
 
-const server = http.createServer(async (request, response) => {
-  const pathname = new URL(request.url, `http://${HOST}:${PORT}`).pathname;
+function createAppServer({
+  openaiClient = openai,
+  rateLimiter = analyzeRateLimiter,
+} = {}) {
+  return http.createServer(async (request, response) => {
+    const pathname = new URL(request.url, `http://${HOST}:${PORT}`).pathname;
 
-  if (pathname === "/api/analyze") {
-    if (request.method !== "POST") {
-      response.setHeader("Allow", "POST");
-      sendJson(response, 405, {
-        success: false,
-        message: "此 API 僅接受 POST 請求",
-      });
-      return;
-    }
-
-    try {
-      const allowed = await enforceAnalyzeRateLimit(request, response);
-
-      if (!allowed) {
+    if (pathname === "/api/analyze") {
+      if (request.method !== "POST") {
+        response.setHeader("Allow", "POST");
+        sendJson(response, 405, {
+          success: false,
+          message: "此 API 僅接受 POST 請求",
+        });
         return;
       }
-    } catch (error) {
-      console.error("Rate limiter failed", { name: error.name });
-      sendJson(response, 500, {
+
+      try {
+        const allowed = await enforceAnalyzeRateLimit(
+          request,
+          response,
+          rateLimiter,
+        );
+
+        if (!allowed) {
+          return;
+        }
+      } catch (error) {
+        console.error("Rate limiter failed", { name: error.name });
+        sendJson(response, 500, {
+          success: false,
+          message: "目前無法處理分析請求，請稍後再試",
+        });
+        return;
+      }
+
+      await handleAnalyze(request, response, openaiClient);
+      return;
+    }
+
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      sendJson(response, 405, {
         success: false,
-        message: "目前無法處理分析請求，請稍後再試",
+        message: "不支援此請求方式",
       });
       return;
     }
 
-    await handleAnalyze(request, response);
-    return;
-  }
+    await serveStaticFile(request.url, response);
+  });
+}
 
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    sendJson(response, 405, {
-      success: false,
-      message: "不支援此請求方式",
-    });
-    return;
-  }
-
-  await serveStaticFile(request.url, response);
-});
+const server = createAppServer();
 
 if (require.main === module) {
   server.listen(PORT, HOST, () => {
@@ -735,9 +839,14 @@ module.exports = {
   MAX_IMAGE_SIZE_BYTES,
   MAX_PROFILE_SIZE_BYTES,
   MAX_PROFILE_TOTAL_LENGTH,
+  OPENAI_MAX_RETRIES,
+  OPENAI_TIMEOUT_MS,
   analyzeRateLimiter,
   analysisSchema,
   buildOpenAIContent,
+  createAppServer,
+  createOpenAIClient,
+  getSafeOpenAIErrorResponse,
   hasStructuredProfileData,
   server,
   validateAnalyzePayload,
