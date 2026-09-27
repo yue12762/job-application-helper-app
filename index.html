@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Job Application Helper：協助整理職缺需求與求職者背景的分析工具。"
+      content="Job Application Helper：將職缺 JD 與求職能力 Profile 比對，整理職缺需求、應徵策略與自我推薦內容的 AI 求職分析工具。"
     />
     <title>Job Application Helper</title>
     <link rel="stylesheet" href="style.css" />
@@ -15,7 +15,17 @@
       <header class="hero">
         <span class="eyebrow">CAREER TOOLKIT</span>
         <h1>Job Application Helper</h1>
-        <p>AI 求職分析與自我推薦信助手</p>
+        <p class="hero-subtitle">AI 求職職缺分析工具</p>
+        <p class="hero-description">
+          將職缺 JD 與個人能力 Profile 進行比對，<br />
+          協助求職者整理「已符合、可延伸、待確認」的職缺需求，<br />
+          並產生應徵策略與自我推薦內容。
+        </p>
+        <span class="demo-badge">Portfolio Demo · 每日體驗次數有限</span>
+        <p class="project-credit">
+          <span class="project-credit-label">Personal Project</span>
+          <span>Product Planning · UI Design · AI Workflow</span>
+        </p>
       </header>
 
       <form class="application-form" id="application-form" novalidate>
@@ -175,6 +185,9 @@
         </section>
 
         <button class="primary-button" type="submit">開始分析</button>
+        <p class="demo-disclaimer">
+          本網站為個人作品集展示專案，AI 分析結果僅供求職準備參考。
+        </p>
       </form>
 
       <dialog class="profile-editor-dialog" id="profile-editor-dialog">
@@ -267,6 +280,192 @@
         <div id="result-message" role="status" aria-live="polite">
           分析結果會顯示在這裡
         </div>
+      </section>
+
+      <section class="about-project" aria-labelledby="about-project-title">
+        <div class="about-project-heading">
+          <span class="section-kicker">CASE STUDY</span>
+          <h2 id="about-project-title">About This Project</h2>
+          <p>專案介紹</p>
+        </div>
+
+        <div class="case-study-grid">
+          <article class="case-study-card">
+            <span class="case-study-label">Problem</span>
+            <h3>求職 JD 資訊很多，但不容易快速判斷自己是否適合</h3>
+            <p>
+              求職者閱讀職缺時，常需要同時整理工作內容、技能需求與加分條件，
+              再與自己的經歷進行比對。當職缺資訊較多時，很難快速判斷哪些能力已經符合、
+              哪些可以延伸，以及哪些資訊仍需要確認。
+            </p>
+          </article>
+          <article class="case-study-card">
+            <span class="case-study-label">Solution</span>
+            <h3>將 JD 與個人 Profile 轉換成可理解的能力比對</h3>
+            <p>
+              Job Application Helper 將職缺 JD 與使用者建立的求職 Profile 進行分析，
+              把需求整理成「已符合、可延伸、待確認」三種狀態，
+              並提供證據、尚待確認項目、應徵策略與自我推薦內容。
+            </p>
+          </article>
+        </div>
+
+        <div class="key-features">
+          <h3>Key Features</h3>
+          <div class="feature-grid">
+            <article class="feature-card">
+              <span class="feature-number">01</span>
+              <div>
+                <h4>JD Requirement Analysis</h4>
+                <p>拆解職缺工作內容與能力要求。</p>
+              </div>
+            </article>
+            <article class="feature-card">
+              <span class="feature-number">02</span>
+              <div>
+                <h4>Profile Matching</h4>
+                <p>將使用者能力、經歷、證照與專案作為比對依據。</p>
+              </div>
+            </article>
+            <article class="feature-card">
+              <span class="feature-number">03</span>
+              <div>
+                <h4>Evidence-based AI</h4>
+                <p>AI 不將沒有資料的能力直接判定為不足，而是標記為「待確認」。</p>
+              </div>
+            </article>
+            <article class="feature-card">
+              <span class="feature-number">04</span>
+              <div>
+                <h4>Application Support</h4>
+                <p>依據分析結果整理應徵重點與自我推薦內容。</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="development-process" aria-labelledby="development-process-title">
+        <div class="development-process-heading">
+          <span class="section-kicker">FROM IDEA TO DEMO</span>
+          <h2 id="development-process-title">Development Process</h2>
+          <p>開發流程</p>
+        </div>
+
+        <ol class="development-steps">
+          <li class="development-step">
+            <span class="development-step-number">01</span>
+            <div class="development-step-content">
+              <h3>Problem Discovery</h3>
+              <p>
+                從求職過程中閱讀大量職缺 JD 的情境出發，
+                思考如何更快速整理職缺需求並與個人能力進行比對。
+              </p>
+            </div>
+          </li>
+          <li class="development-step">
+            <span class="development-step-number">02</span>
+            <div class="development-step-content">
+              <h3>Product Planning</h3>
+              <p>
+                規劃 JD 輸入、求職 Profile、能力比對、
+                應徵策略與自我推薦等核心使用流程。
+              </p>
+            </div>
+          </li>
+          <li class="development-step">
+            <span class="development-step-number">03</span>
+            <div class="development-step-content">
+              <h3>UI &amp; Interaction Design</h3>
+              <p>
+                設計資訊層級、能力狀態卡片與 Profile 補充流程，
+                讓複雜的 AI 分析結果更容易閱讀與操作。
+              </p>
+            </div>
+          </li>
+          <li class="development-step">
+            <span class="development-step-number">04</span>
+            <div class="development-step-content">
+              <h3>AI-assisted Development</h3>
+              <p>
+                使用 ChatGPT / Codex 協助程式開發與測試，
+                並自行定義產品需求、AI 判斷規則、測試情境與迭代方向。
+              </p>
+            </div>
+          </li>
+          <li class="development-step">
+            <span class="development-step-number">05</span>
+            <div class="development-step-content">
+              <h3>Testing &amp; Deployment</h3>
+              <p>
+                測試 JD × Profile 比對、Evidence-based AI、API 錯誤處理與使用限制，
+                並將 Web App 部署為可實際操作的 Portfolio Demo。
+              </p>
+            </div>
+          </li>
+        </ol>
+
+        <div class="project-tools" aria-labelledby="project-tools-title">
+          <div class="project-tools-heading">
+            <h3 id="project-tools-title">Tools &amp; Technologies</h3>
+            <p>工具與技術</p>
+          </div>
+          <ul class="tool-list">
+            <li>HTML</li>
+            <li>CSS</li>
+            <li>JavaScript</li>
+            <li>Node.js</li>
+            <li>OpenAI API</li>
+            <li>Git / GitHub</li>
+            <li>Render</li>
+            <li>ChatGPT / Codex</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="project-learnings" aria-labelledby="project-learnings-title">
+        <div class="project-learnings-heading">
+          <span class="section-kicker">REFLECTION</span>
+          <h2 id="project-learnings-title">Project Learnings</h2>
+          <p>專案收穫</p>
+        </div>
+
+        <div class="learning-grid">
+          <article class="learning-card">
+            <span class="learning-number">01</span>
+            <h3>從功能需求轉換成產品流程</h3>
+            <p>
+              透過實際製作 Job Application Helper，練習將「分析職缺」這個想法拆解成
+              JD 輸入、Profile 建立、能力比對、結果呈現與補充資料等完整流程。
+            </p>
+          </article>
+          <article class="learning-card">
+            <span class="learning-number">02</span>
+            <h3>設計 AI 的判斷邊界</h3>
+            <p>
+              在開發過程中發現，AI 容易將缺少資料誤解為使用者不具備能力。
+              因此建立「已符合、可延伸、待確認」與 Evidence-based AI 規則，
+              讓分析結果更重視資料證據與不確定性。
+            </p>
+          </article>
+          <article class="learning-card">
+            <span class="learning-number">03</span>
+            <h3>從 Prototype 到可操作 Web App</h3>
+            <p>
+              除了 UI 與 AI 功能，也實際處理 API 串接、輸入限制、Rate Limit、
+              錯誤處理與 Render 部署，理解一個 AI Prototype 要成為可供他人操作的 Web Demo，
+              還需要考慮安全性、成本與使用體驗。
+            </p>
+          </article>
+        </div>
+
+        <footer class="project-ending">
+          <h3>Job Application Helper</h3>
+          <p class="project-ending-type">Personal AI Product Project</p>
+          <p class="project-ending-note">
+            Designed &amp; built as a portfolio project with AI-assisted development.
+          </p>
+        </footer>
       </section>
     </main>
 
