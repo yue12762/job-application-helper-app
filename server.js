@@ -219,7 +219,9 @@ const analysisInstructions = `
 const publicFiles = new Map([
   ["/", { file: "index.html", contentType: "text/html; charset=utf-8" }],
   ["/index.html", { file: "index.html", contentType: "text/html; charset=utf-8" }],
+  ["/portfolio.html", { file: "portfolio.html", contentType: "text/html; charset=utf-8" }],
   ["/style.css", { file: "style.css", contentType: "text/css; charset=utf-8" }],
+  ["/portfolio.css", { file: "portfolio.css", contentType: "text/css; charset=utf-8" }],
   ["/script.js", { file: "script.js", contentType: "text/javascript; charset=utf-8" }],
 ]);
 
