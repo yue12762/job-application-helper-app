@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Job Application Helper 個人專案作品案例：以 Evidence-based AI 將職缺 JD 與求職 Profile 轉化為可理解的能力配對。"
+    />
+    <meta name="theme-color" content="#f4f7fb" />
+    <title>Job Application Helper｜Project Case Study</title>
+    <link rel="stylesheet" href="portfolio.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Job Application Helper Portfolio 首頁">
+        <span class="brand-mark" aria-hidden="true">J</span>
+        <span>Job Application Helper</span>
+      </a>
+      <nav class="site-nav" aria-label="作品集導覽">
+        <a href="#overview">專案概覽</a>
+        <a href="#evidence-ai">AI 設計</a>
+        <a href="#process">開發流程</a>
+        <a class="nav-cta" href="#live-demo">查看 Demo</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero page-width" aria-labelledby="project-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span></span> PERSONAL PROJECT · PORTFOLIO CASE STUDY</p>
+          <h1 id="project-title">Job Application<br /><em>Helper</em></h1>
+          <p class="hero-subtitle">AI 求職職缺分析工具</p>
+          <p class="hero-description">
+            從求職時反覆閱讀職缺的情境出發，將 JD 與求職能力 Profile
+            轉成有證據、有邊界的能力比對，協助使用者整理應徵重點。
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#live-demo">前往操作 Demo <span aria-hidden="true">↗</span></a>
+            <a class="text-link" href="#overview">閱讀專案案例 <span aria-hidden="true">↓</span></a>
+          </div>
+          <div class="hero-meta" aria-label="專案角色範圍">
+            <span>Product Planning</span>
+            <span>UI / Information Design</span>
+            <span>AI Workflow</span>
+          </div>
+        </div>
+        <div class="hero-visual" aria-label="產品分析狀態示意">
+          <div class="visual-topbar">
+            <span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span>JD × PROFILE</span>
+            <span class="visual-live"><i></i> UI STRUCTURE</span>
+          </div>
+          <div class="visual-content">
+            <div class="visual-heading">
+              <span class="mini-icon" aria-hidden="true">✦</span>
+              <div><small>職缺配對摘要</small><strong>將證據與未知分開呈現</strong></div>
+            </div>
+            <div class="visual-stats" aria-label="三種能力狀態">
+              <div class="stat confirmed"><span>已符合</span><b>Confirmed</b></div>
+              <div class="stat inferred"><span>可延伸</span><b>Inferred</b></div>
+              <div class="stat unknown"><span>待確認</span><b>Unknown</b></div>
+            </div>
+            <div class="visual-requirement">
+              <div class="requirement-title"><span class="status-dot unknown-dot"></span><strong>職缺需求拆解</strong><span class="status-pill unknown-pill">待確認</span></div>
+              <div class="requirement-lines"><span>已有證據</span><span class="line short"></span><span>尚待確認</span><span class="line long"></span></div>
+              <p>部分相關資料不代表完整符合；未知資訊保留為待確認。</p>
+            </div>
+            <div class="visual-footer"><span>Evidence-based matching</span><span>STATUS OVERVIEW</span></div>
+          </div>
+        </div>
+        <div class="hero-caption">配對結果介面示意 · 個人專案 · AI Application / Product Planning / UI Design / AI Workflow</div>
+      </section>
+
+      <section class="overview page-width section-block" id="overview" aria-labelledby="overview-title">
+        <div class="section-heading">
+          <div><p class="eyebrow">PROJECT OVERVIEW</p><h2 id="overview-title">從求職情境出發，<br class="mobile-break" />整理 JD 與個人能力的關係。</h2></div>
+          <p class="section-lede">作品類型：個人專案<br />AI 求職輔助 Web App</p>
+        </div>
+        <div class="overview-grid">
+          <article class="overview-card overview-problem">
+            <span class="card-index">01 / PROBLEM</span>
+            <h3>職缺資訊多，<br />比較過程費時又不完整。</h3>
+            <p>閱讀不同職缺時，需要整理工作內容、必要能力、加分條件與工具要求，再逐項回想自己的經歷。資料一多，容易忽略能力證據，也不容易分辨哪些只是尚未確認。</p>
+          </article>
+          <article class="overview-card overview-solution">
+            <span class="card-index">02 / SOLUTION</span>
+            <h3>把需求拆成可閱讀、<br />可補充的能力配對。</h3>
+            <p>使用者輸入文字 JD 或職缺截圖，並建立可重複使用的求職 Profile。AI 依據 Profile 中明確提供的資訊分析需求，產生證據、待確認項目、應徵策略與自我推薦草稿。</p>
+          </article>
+        </div>
+        <div class="project-facts" aria-label="專案摘要">
+          <div><span>PRODUCT</span><strong>求職能力分析 Web App</strong></div>
+          <div><span>INPUT</span><strong>JD 文字或職缺截圖 × Profile</strong></div>
+          <div><span>OUTPUT</span><strong>配對狀態、應徵建議、自我推薦</strong></div>
+        </div>
+      </section>
+
+      <section class="solution-flow page-width section-block" aria-labelledby="flow-title">
+        <div class="section-heading compact-heading">
+          <div><p class="eyebrow">CORE PRODUCT FLOW</p><h2 id="flow-title">從輸入到行動，<br class="mobile-break" />每一步都保留使用者判斷。</h2></div>
+          <p class="section-lede">將 AI 分析放進可理解的產品流程，而非只回傳一段長文字。</p>
+        </div>
+        <ol class="flow-list">
+          <li><span class="flow-number">01</span><div><h3>提供職缺</h3><p>貼上 JD 文字，或選擇上傳職缺截圖；也支援兩者並用。</p></div><span class="flow-tag">JD INPUT</span></li>
+          <li><span class="flow-number">02</span><div><h3>建立求職 Profile</h3><p>整理技能、證照、經驗、作品與其他求職能力，留在目前瀏覽器供重複使用。</p></div><span class="flow-tag">REUSABLE PROFILE</span></li>
+          <li><span class="flow-number">03</span><div><h3>檢視能力配對</h3><p>逐項查看已符合、可延伸、待確認狀態，以及已有證據和尚待確認的子要求。</p></div><span class="flow-tag">EVIDENCE</span></li>
+          <li><span class="flow-number">04</span><div><h3>補充並重新分析</h3><p>使用者可為待確認項目自行補充 Profile，再交由 AI 根據更新後的資料重新判斷。</p></div><span class="flow-tag">ITERATION</span></li>
+          <li><span class="flow-number">05</span><div><h3>整理應徵內容</h3><p>依照分析結果整理優先主打、可以補強、應徵呈現方式與自我推薦內容。</p></div><span class="flow-tag">APPLICATION SUPPORT</span></li>
+        </ol>
+      </section>
+
+      <section class="features page-width section-block" aria-labelledby="features-title">
+        <div class="section-heading compact-heading">
+          <div><p class="eyebrow">KEY FEATURES</p><h2 id="features-title">功能圍繞「看懂需求、找到證據、採取下一步」。</h2></div>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card"><span>01</span><div><h3>JD Requirement Analysis</h3><p>拆解工作內容、能力要求與加分條件，支援文字與截圖輸入。</p></div></article>
+          <article class="feature-card"><span>02</span><div><h3>Reusable Profile</h3><p>以技能、證照、經驗、作品與優勢建立求職能力資料。</p></div></article>
+          <article class="feature-card"><span>03</span><div><h3>Profile Matching</h3><p>將 JD 中的要求逐項比對 Profile，並呈現支持判斷的資料。</p></div></article>
+          <article class="feature-card"><span>04</span><div><h3>Requirement Decomposition</h3><p>複合要求拆成子項，區分已有證據與尚待確認，避免部分符合被視為全部符合。</p></div></article>
+          <article class="feature-card"><span>05</span><div><h3>Profile Supplement</h3><p>使用者自行補充相關能力，更新 Profile 後重新分析，不由前端預設符合。</p></div></article>
+          <article class="feature-card"><span>06</span><div><h3>Application Strategy</h3><p>整理優先主打、可以補強、應徵呈現方式與只根據已確認資訊撰寫的推薦內容。</p></div></article>
+        </div>
+      </section>
+
+      <section class="evidence-section page-width section-block" id="evidence-ai" aria-labelledby="evidence-title">
+        <div class="evidence-copy">
+          <p class="eyebrow">AI WORKFLOW DESIGN</p>
+          <h2 id="evidence-title">AI 判斷邊界設計<br /><em>Evidence-based AI</em></h2>
+          <p class="evidence-intro">開發過程中最重要的設計問題，不只是如何呼叫模型，而是如何避免模型把「沒有資料」說成「沒有能力」。</p>
+          <p>因此，分析結果要指出依據和不確定性。複合要求會拆解子項；使用者補充資料後，也必須重新分析，不能由前端把狀態直接改成已符合。</p>
+        </div>
+        <div class="evidence-cards">
+          <article class="evidence-card evidence-confirmed"><div><span class="evidence-symbol">✓</span><span class="evidence-name">Confirmed</span></div><h3>已符合</h3><p>Profile 明確提供的能力或經驗，才作為已確認證據。</p><small>明確資料支持</small></article>
+          <article class="evidence-card evidence-inferred"><div><span class="evidence-symbol">↗</span><span class="evidence-name">Inferred</span></div><h3>可延伸</h3><p>存在相關線索，但仍需保守描述，不提升為已確認事實。</p><small>相關但尚未完整確認</small></article>
+          <article class="evidence-card evidence-unknown"><div><span class="evidence-symbol">?</span><span class="evidence-name">Unknown</span></div><h3>待確認</h3><p>Profile 資訊不足。未知代表尚未確認，不代表能力不足。</p><small>保留不確定性</small></article>
+        </div>
+        <div class="evidence-rule"><span class="rule-mark">“</span><p>Profile 沒有寫，不代表使用者不會。<br /><strong>讓 AI 說清楚證據，也說清楚不知道的部分。</strong></p></div>
+      </section>
+
+      <section class="ux-section page-width section-block" aria-labelledby="ux-title">
+        <div class="section-heading compact-heading">
+          <div><p class="eyebrow">UI / UX DECISIONS</p><h2 id="ux-title">把複雜分析變成可以快速掃讀的資訊。</h2></div>
+          <p class="section-lede">以狀態、證據與下一步建立閱讀層級，讓使用者能先看全貌，再查看細節。</p>
+        </div>
+        <div class="ux-grid">
+          <article class="ux-card"><span class="ux-index">01</span><h3>狀態顏色一致</h3><p>綠色呈現已符合、藍色呈現可延伸、橘色呈現待確認，支援快速辨認狀態。</p><div class="color-legend"><i class="legend-green">已符合</i><i class="legend-blue">可延伸</i><i class="legend-orange">待確認</i></div></article>
+          <article class="ux-card"><span class="ux-index">02</span><h3>證據與未知分開</h3><p>能力卡片同時呈現判斷說明、已有證據與尚待確認的子要求，避免過度簡化複合條件。</p><div class="mini-evidence"><span>已有證據</span><span>尚待確認</span></div></article>
+          <article class="ux-card"><span class="ux-index">03</span><h3>就地補充 Profile</h3><p>待確認項目可開啟補充視窗，選擇 Profile 類型並由使用者自行輸入資料。</p><div class="mini-action">＋ 補充相關能力 <span>取消　加入並重新分析</span></div></article>
+          <article class="ux-card"><span class="ux-index">04</span><h3>控制閱讀負擔</h3><p>將求職建議整理為優先主打、可以補強、應徵呈現方式三部分，協助聚焦當前職缺。</p><div class="mini-focus"><b>優先主打</b><b>可以補強</b><b>應徵呈現方式</b></div></article>
+        </div>
+      </section>
+
+      <section class="process-section page-width section-block" id="process" aria-labelledby="process-title">
+        <div class="section-heading compact-heading">
+          <div><p class="eyebrow">FROM IDEA TO DEMO</p><h2 id="process-title">從問題定義到上線展示，<br class="mobile-break" />逐步驗證產品方向。</h2></div>
+          <p class="section-lede">需求、判斷規則、測試情境與迭代方向由我規劃；ChatGPT / Codex 協助實作與測試。</p>
+        </div>
+        <ol class="process-timeline">
+          <li><span>01</span><div><h3>Problem Discovery</h3><p>從實際求職中閱讀大量 JD 的情境，整理資訊多且難以逐項比對的問題。</p></div></li>
+          <li><span>02</span><div><h3>Product Planning</h3><p>規劃 JD、Profile、能力比對、結果、資料補充與自我推薦的產品流程。</p></div></li>
+          <li><span>03</span><div><h3>UI &amp; Interaction Design</h3><p>設計結果資訊層級、狀態卡片與 Profile 補充互動，降低閱讀與操作負擔。</p></div></li>
+          <li><span>04</span><div><h3>AI Workflow Design</h3><p>制定 Evidence-based AI、Confirmed / Inferred / Unknown 與複合需求拆解原則。</p></div></li>
+          <li><span>05</span><div><h3>AI-assisted Development</h3><p>使用 ChatGPT / Codex 協助程式開發、測試與迭代；產品需求與驗收方向由我定義。</p></div></li>
+          <li><span>06</span><div><h3>Testing</h3><p>測試 JD × Profile、複合需求、Profile 補充與重新分析、錯誤處理及使用限制。</p></div></li>
+          <li><span>07</span><div><h3>Deployment</h3><p>以 Git / GitHub 管理版本，部署至 Render，提供可實際操作的 Portfolio Demo。</p></div></li>
+        </ol>
+      </section>
+
+      <section class="safety-section page-width section-block" aria-labelledby="safety-title">
+        <div class="safety-heading"><p class="eyebrow">PUBLIC DEMO</p><h2 id="safety-title">把安全與成本控制納入展示版本。</h2><p>公開 Demo 需要可操作，也需要清楚的使用邊界。API Key 留在伺服器端，並以使用限制降低公開展示期間的濫用與額外成本。</p></div>
+        <div class="safety-grid">
+          <div><span>01</span><strong>Server-side API Key</strong><p>透過伺服器環境變數管理，不送往瀏覽器。</p></div>
+          <div><span>02</span><strong>Usage Limits</strong><p>分析端點設有 Rate Limit 與每日 Demo 次數上限。</p></div>
+          <div><span>03</span><strong>Input Protection</strong><p>限制 JD、Profile、圖片與整體 Request Body 大小。</p></div>
+          <div><span>04</span><strong>Resilient API</strong><p>設定 OpenAI Timeout、Retry 與通用錯誤處理。</p></div>
+          <div><span>05</span><strong>Deployment Health</strong><p>由 Render 環境變數提供設定，並提供 Health Check。</p></div>
+        </div>
+      </section>
+
+      <section class="tools-section page-width section-block" aria-labelledby="tools-title">
+        <div class="section-heading compact-heading"><div><p class="eyebrow">TOOLS &amp; TECHNOLOGIES</p><h2 id="tools-title">以目前專案實際使用的工具完成產品。</h2></div></div>
+        <ul class="tool-chips">
+          <li>HTML</li><li>CSS</li><li>JavaScript</li><li>Node.js</li><li>OpenAI API</li><li>Git</li><li>GitHub</li><li>Render</li><li>ChatGPT</li><li>Codex</li>
+        </ul>
+      </section>
+
+      <section class="learning-section page-width section-block" aria-labelledby="learning-title">
+        <div class="section-heading compact-heading"><div><p class="eyebrow">PROJECT LEARNINGS</p><h2 id="learning-title">三個從製作過程帶走的收穫。</h2></div></div>
+        <div class="learning-grid">
+          <article><span>01</span><h3>把想法拆成完整流程</h3><p>從 JD 輸入、Profile 建立、AI 分析，到結果閱讀與補充資料，理解功能如何串成可操作的產品經驗。</p></article>
+          <article><span>02</span><h3>設計 AI 的判斷邊界</h3><p>AI 產品需要處理不確定性。資料缺少時保留 Unknown，並要求結果有證據、複合需求要拆解。</p></article>
+          <article><span>03</span><h3>讓 Prototype 成為可用 Demo</h3><p>除了主要功能，也需處理 API 錯誤、使用限制、成本控制與部署，才能供他人實際操作。</p></article>
+        </div>
+      </section>
+
+      <section class="role-section page-width section-block" aria-labelledby="role-title">
+        <div class="role-intro"><p class="eyebrow">MY ROLE</p><h2 id="role-title">以產品思考規劃 AI 應用，<br />並透過 AI 協作實作與迭代。</h2><p>我負責定義問題與需求、設計資訊呈現與 AI 行為規則、規劃測試情境及迭代方向，並使用 AI Coding Tools 協助開發。</p></div>
+        <ul class="role-list"><li>Product Planning</li><li>UI / Information Design</li><li>AI Workflow Design</li><li>Prompt &amp; AI Behavior Planning</li><li>Testing &amp; Iteration</li><li>AI-assisted Development</li><li>Deployment Planning</li></ul>
+      </section>
+
+      <section class="demo-section page-width" id="live-demo" aria-labelledby="demo-title">
+        <div class="demo-card">
+          <div><p class="eyebrow">LIVE DEMO</p><h2 id="demo-title">Job Application Helper</h2><p>實際操作 JD 輸入、求職 Profile 與能力配對流程。此網站為個人作品集展示專案，AI 分析結果僅供求職準備參考。</p><span class="demo-limit">Portfolio Demo · 每日體驗次數有限</span></div>
+          <a class="button button-light" href="./" target="_blank" rel="noopener">開啟 Web App <span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer page-width">
+      <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true">J</span><span>Job Application Helper</span></a>
+      <span>Personal Project · AI-assisted Development</span>
+      <a href="#top">回到頁首 ↑</a>
+    </footer>
+  </body>
+</html>
