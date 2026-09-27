@@ -23,6 +23,15 @@ const MAX_PROFILE_URL_LENGTH = 2000;
 const MAX_PROFILE_TOTAL_LENGTH = 50_000;
 const OPENAI_TIMEOUT_MS = 90_000;
 const OPENAI_MAX_RETRIES = 1;
+const DAILY_DEMO_LIMIT = 5;
+const DAILY_DEMO_LIMIT_MESSAGE =
+  "今日 Demo 體驗次數已達上限，本網站為個人作品集展示專案。";
+const demoDayFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Taipei",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 const PROFILE_CATEGORIES = [
   "skills",
   "certifications",
@@ -87,6 +96,33 @@ const analyzeRateLimiter = rateLimit({
     });
   },
 });
+
+function createDailyDemoLimiter(now = () => new Date()) {
+  // Single-instance Portfolio Demo only. Multiple instances need a shared store
+  // so all instances enforce the same daily count for each client IP.
+  const countsByIp = new Map();
+  let currentDay = "";
+
+  return (request, response) => {
+    const day = demoDayFormatter.format(now());
+
+    if (day !== currentDay) {
+      countsByIp.clear();
+      currentDay = day;
+    }
+
+    const clientIp = ipKeyGenerator(getRateLimitClientIp(request), 56);
+    const count = countsByIp.get(clientIp) || 0;
+
+    if (count >= DAILY_DEMO_LIMIT) {
+      sendJson(response, 429, { error: DAILY_DEMO_LIMIT_MESSAGE });
+      return false;
+    }
+
+    countsByIp.set(clientIp, count + 1);
+    return true;
+  };
+}
 
 const analysisSchema = {
   type: "object",
@@ -620,7 +656,12 @@ function logSafeOpenAIError(error, category) {
   console.error("OpenAI request failed", diagnostic);
 }
 
-async function handleAnalyze(request, response, openaiClient = openai) {
+async function handleAnalyze(
+  request,
+  response,
+  openaiClient,
+  dailyLimiter,
+) {
   const contentType = request.headers["content-type"] || "";
 
   if (!contentType.includes("application/json")) {
@@ -640,6 +681,10 @@ async function handleAnalyze(request, response, openaiClient = openai) {
       sendJson(response, 503, {
         error: AI_SERVICE_ERROR_MESSAGE,
       });
+      return;
+    }
+
+    if (!dailyLimiter(request, response)) {
       return;
     }
 
@@ -797,6 +842,7 @@ async function serveStaticFile(requestUrl, response) {
 function createAppServer({
   openaiClient = openai,
   rateLimiter = analyzeRateLimiter,
+  dailyLimiter = createDailyDemoLimiter(),
 } = {}) {
   return http.createServer(async (request, response) => {
     const pathname = new URL(request.url, `http://${HOST}:${PORT}`).pathname;
@@ -844,7 +890,7 @@ function createAppServer({
         return;
       }
 
-      await handleAnalyze(request, response, openaiClient);
+      await handleAnalyze(request, response, openaiClient, dailyLimiter);
       return;
     }
 
@@ -878,10 +924,12 @@ module.exports = {
   MAX_PROFILE_TOTAL_LENGTH,
   OPENAI_MAX_RETRIES,
   OPENAI_TIMEOUT_MS,
+  DAILY_DEMO_LIMIT,
   analyzeRateLimiter,
   analysisSchema,
   buildOpenAIContent,
   createAppServer,
+  createDailyDemoLimiter,
   createOpenAIClient,
   getRateLimitClientIp,
   getSafeOpenAIErrorResponse,
